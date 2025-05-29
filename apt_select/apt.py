@@ -113,15 +113,24 @@ class Sources(object):
         self.new_file_path = None
 
     def __set_sources_lines(self):
-        """Read system config file and store the lines in memory for parsing
-           and generation of new config file"""
+        """Read system config file and store the lines in memory for parsing and generation of new config file"""
         try:
             with open(self._CONFIG_PATH, 'r') as f:
                 self._lines = f.readlines()
+            # Check if file is empty or only comments
+            if not any(line.strip() and not line.strip().startswith('#') for line in self._lines):
+                # Try .list files in /etc/apt/sources.list.d/
+                list_files = glob.glob('/etc/apt/sources.list.d/*.list')
+                for lf in list_files:
+                    with open(lf, 'r') as f2:
+                        lines = f2.readlines()
+                        if any(line.strip() and not line.strip().startswith('#') for line in lines):
+                            self._lines.extend(lines)
+                # Optionally, print a warning if no usable lines found
+                if not any(line.strip() and not line.strip().startswith('#') for line in self._lines):
+                    raise SourcesFileError("No usable sources found in /etc/apt/sources.list or /etc/apt/sources.list.d/*.list")
         except IOError as err:
-            raise SourcesFileError((
-                "Unable to read system apt file: %s" % err
-            ))
+            raise SourcesFileError(("Unable to read system apt file: %s" % err))
 
     def __confirm_apt_source_uri(self, uri):
         """Check if line follows correct sources.list URI"""
