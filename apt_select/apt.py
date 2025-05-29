@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import glob
 from subprocess import check_output
 from os import path
 from apt_select.utils import utf8_decode
